@@ -1,0 +1,13 @@
+root = "."
+
+[build]
+  bin = "tmp/decidr"
+  cmd = "go build -o tmp/decidr ./cmd/decidr"
+  stop_on_error = true
+  delay = 1000
+  include_ext = ["go", "tmpl", "css", "ico", "svg", "png", "ttf", "woff", "woff2"]
+  exclude_dir = ["tmp", "build"]
+
+[run]
+  cmd = "./tmp/mums"
+
