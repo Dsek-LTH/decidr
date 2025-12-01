@@ -9,5 +9,5 @@ root = "."
   exclude_dir = ["tmp", "build"]
 
 [run]
-  cmd = "./tmp/mums"
+  cmd = "./tmp/decidr"
 
