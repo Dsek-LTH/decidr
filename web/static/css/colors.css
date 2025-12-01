@@ -1,0 +1,108 @@
+.text-d {
+    color: #f280a1;
+}
+
+.text-c {
+    color: #9966cc;
+}
+
+.text-tlth {
+    color: #00529b;
+}
+
+.hover\:text-d:hover {
+    color: #f280a1;
+}
+
+.hover\:text-c:hover {
+    color: #9966cc;
+}
+
+.hover\:text-tlth:hover {
+    color: #00529b;
+}
+
+.focus\:text-d:focus {
+    color: #f280a1;
+}
+
+.focus\:text-c:focus {
+    color: #9966cc;
+}
+
+.focus\:text-tlth:focus {
+    color: #00529b;
+}
+
+.bg-d {
+    background-color: #f280a1;
+}
+
+.bg-c {
+    background-color: #9966cc;
+}
+
+.bg-tlth {
+    background-color: #00529b;
+}
+
+.hover\:bg-d:hover {
+    background-color: #f280a1;
+}
+
+.hover\:bg-c:hover {
+    background-color: #9966cc;
+}
+
+.hover\:bg-tlth:hover {
+    background-color: #00529b;
+}
+
+.focus\:bg-d:focus {
+    background-color: #f280a1;
+}
+
+.focus\:bg-c:focus {
+    background-color: #9966cc;
+}
+
+.focus\:bg-tlth:focus {
+    background-color: #00529b;
+}
+
+.border-d {
+    border-color: #f280a1;
+}
+
+.border-c {
+    border-color: #9966cc;
+}
+
+.border-tlth {
+    border-color: #00529b;
+}
+
+.hover\:border-d:hover {
+    border-color: #f280a1;
+}
+
+.hover\:border-c:hover {
+    border-color: #9966cc;
+}
+
+.hover\:border-tlth:hover {
+    border-color: #00529b;
+}
+
+.focus\:border-d:focus {
+    border-color: #f280a1;
+}
+
+.focus\:border-c:focus {
+    border-color: #9966cc;
+}
+
+.focus\:border-tlth:focus {
+    border-color: #00529b;
+}
+

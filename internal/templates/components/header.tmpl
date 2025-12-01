@@ -1,0 +1,29 @@
+{{ define "header" }}
+<nav class="border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between h-16">
+
+        <div class="flex-shrink-0 flex flex-1 justify-start items-center">
+            <a href="/">
+                <img class="h-10 w-auto" src="/static/icons/decidr.png" alt="Logo" />
+            </a>
+        </div>
+        
+        <div class="hidden sm:-my-px sm:flex sm:flex-1 justify-center sm:space-x-8">
+            <a href="/" class="border-transparent text-gray-700 hover:border-d focus:border-d hover:text-gray-900 focus:text-gray-900 inline-flex items-center px-1 pt-0.5 border-b-2 text-sm">
+                Home
+            </a>
+            <a href="/about" class="border-transparent text-gray-700 hover:border-d focus:border-d hover:text-gray-900 focus:text-gray-900 inline-flex items-center px-1 pt-0.5 border-b-2 text-sm">
+                About
+            </a>
+        </div>
+
+        <div class="sm:hidden -my-px flex flex-1 justify-center sm:space-x-8">
+            <a href="/about" class="border-transparent text-gray-700 hover:border-d focus:border-d hover:text-gray-900 focus:text-gray-900 inline-flex items-center px-1 pt-0.5 border-b-2 text-sm">
+                - About -
+            </a>
+        </div>
+
+    </div>
+</nav>
+{{ end }}
+

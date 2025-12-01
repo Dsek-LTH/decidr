@@ -1,0 +1,15 @@
+@font-face {
+    font-family: "Iosevka Nerd Font Mono";
+    src:
+        url("/static/fonts/iosevka/IosevkaNerdFontMono-Regular.woff2") format("woff2"),
+        url("/static/fonts/iosevka/IosevkaNerdFontMono-Regular.ttf") format("truetype");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+.font-iosevka {
+    font-family: "Iosevka Nerd Font Mono", monospace;
+    font-feature-settings: "calt" 0;
+}
+

@@ -1,0 +1,28 @@
+{{ define "base" }}
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>{{ block "title" . }}decidr{{ end }}</title>
+        <link rel="icon" href="/static/favicon.ico" type="image/x-icon"/>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="stylesheet" href="/static/css/colors.css"/>
+        <link rel="stylesheet" href="/static/css/fonts.css"/>
+        {{ block "head" . }}
+        {{ end }}
+    </head>
+    <body class="max-w-screen min-h-screen flex flex-col font-iosevka">
+        <header role="banner" class="sticky top-0 z-1337 bg-amber-50">
+            {{ template "header" . }}
+        </header>
+        <main role="main" class="flex-grow flex items-center justify-center bg-amber-50 py-12">
+            {{ template "content" . }}
+        </main>
+        <footer role="contentinfo" class="bg-slate-900">
+            {{ template "footer" . }}
+        </footer>
+    </body>
+</html>
+{{ end }}
+
