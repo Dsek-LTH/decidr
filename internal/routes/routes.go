@@ -14,4 +14,3 @@ func RegisterRoutes(mux *http.ServeMux, renderer *templates.TemplateRenderer) {
 		},
 	)
 }
-
