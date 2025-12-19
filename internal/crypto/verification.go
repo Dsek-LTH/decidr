@@ -2,26 +2,8 @@
 package crypto
 
 import (
-	"bytes"
-	"crypto/ed25519"
-	"crypto/sha256"
-
 	"github.com/Dsek-LTH/decidr/pkg/data/wordlists"
 )
-
-func GetVerificationHash(publicKeyA, publicKeyB ed25519.PublicKey) []byte {
-	hash := sha256.New()
-
-	if bytes.Compare(publicKeyA, publicKeyB) < 0 {
-		hash.Write(publicKeyA)
-		hash.Write(publicKeyB)
-	} else {
-		hash.Write(publicKeyB)
-		hash.Write(publicKeyA)
-	}
-
-	return hash.Sum(nil)
-}
 
 func GetVerificationWords(hash []byte, wordCount int) []string {
 	bitLength := len(hash) * 8
