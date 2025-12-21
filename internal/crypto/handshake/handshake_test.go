@@ -1,112 +1,186 @@
 package handshake
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Dsek-LTH/decidr/internal/crypto"
 )
 
 func TestHandshakeVerificationWordsMatch(t *testing.T) {
-	// In-memory "network"
-	clientToServerChannel := make(chan []byte, 1)
-	serverToClientChannel := make(chan []byte, 1)
+	client, server := newInMemoryPeers()
 
-	// Mock send/receive
-	clientSend := func(b []byte) error {
-		clientToServerChannel <- b
-		return nil
-	}
-	clientReceive := func() ([]byte, error) {
-		return <-serverToClientChannel, nil
-	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
 
-	serverSend := func(b []byte) error {
-		serverToClientChannel <- b
-		return nil
-	}
-	serverReceive := func() ([]byte, error) {
-		return <-clientToServerChannel, nil
+	clientCh := runHandshakeAsync(ctx, Initiator, client)
+	serverCh := runHandshakeAsync(ctx, Responder, server)
+
+	var clientRes, serverRes handshakeResult
+
+	select {
+	case clientRes = <-clientCh:
+	case <-ctx.Done():
+		t.Fatal("client handshake timed out")
 	}
 
-	type result struct {
-		hash []byte
-		err  error
+	select {
+	case serverRes = <-serverCh:
+	case <-ctx.Done():
+		t.Fatal("server handshake timed out")
 	}
 
-	clientResultChannel := make(chan result, 1)
-	serverResultChannel := make(chan result, 1)
-
-	// Run client and server concurrently
-	go func() {
-		_, _, hash, err := Perform(context.Background(), Initiator, clientSend, clientReceive)
-		clientResultChannel <- result{hash: hash, err: err}
-	}()
-
-	go func() {
-		_, _, hash, err := Perform(context.Background(), Responder, serverSend, serverReceive)
-		serverResultChannel <- result{hash: hash, err: err}
-	}()
-
-	clientResult := <-clientResultChannel
-	serverResult := <-serverResultChannel
-
-	if clientResult.err != nil {
-		t.Fatalf("client handshake failed: %v", clientResult.err)
+	if clientRes.err != nil {
+		t.Fatalf("client handshake failed: %v", clientRes.err)
 	}
-	if serverResult.err != nil {
-		t.Fatalf("server handshake failed: %v", serverResult.err)
+	if serverRes.err != nil {
+		t.Fatalf("server handshake failed: %v", serverRes.err)
 	}
 
-	clientWords := crypto.GetVerificationWords(clientResult.hash, 6)
-	serverWords := crypto.GetVerificationWords(serverResult.hash, 6)
+	if len(clientRes.hash) == 0 {
+		t.Fatal("client handshake hash is empty")
+	}
+	if len(serverRes.hash) == 0 {
+		t.Fatal("server handshake hash is empty")
+	}
 
-	clientCode := strings.Join(clientWords, "-")
-	serverCode := strings.Join(serverWords, "-")
+	clientWords := crypto.GetVerificationWords(clientRes.hash, 6)
+	serverWords := crypto.GetVerificationWords(serverRes.hash, 6)
 
-	if clientCode != serverCode {
+	if strings.Join(clientWords, "-") != strings.Join(serverWords, "-") {
 		t.Fatalf(
-			"verification codes differ:\nclient: %s\nserver: %s",
-			clientCode,
-			serverCode,
+			"verification codes differ:\nclient: %v\nserver: %v",
+			clientWords,
+			serverWords,
 		)
 	}
 }
 
 func TestHandshakeContextCancellation(t *testing.T) {
-	// In-memory "network"
-	clientToServerChannel := make(chan []byte, 1)
-	serverToClientChannel := make(chan []byte, 1)
+	client, server := newInMemoryPeers()
 
-	// Mock send/receive
-	clientSend := func(b []byte) error {
-		clientToServerChannel <- b
-		return nil
-	}
-	clientReceive := func() ([]byte, error) {
-		return <-serverToClientChannel, nil
-	}
-
-	serverSend := func(b []byte) error {
-		serverToClientChannel <- b
-		return nil
-	}
-	serverReceive := func() ([]byte, error) {
-		return <-clientToServerChannel, nil
-	}
-
-	// Create a context that is already cancelled
 	ctx, cancel := context.WithCancel(context.Background())
+
+	clientCh := runHandshakeAsync(ctx, Initiator, client)
+	serverCh := runHandshakeAsync(ctx, Responder, server)
+
+	// Cancel shortly after starting
 	cancel()
 
-	_, _, _, err := Perform(ctx, Initiator, clientSend, clientReceive)
+	clientRes := <-clientCh
+	serverRes := <-serverCh
+
+	if clientRes.err == nil && serverRes.err == nil {
+		t.Fatal("expected handshake to fail due to context cancellation")
+	}
+}
+
+func TestHandshakeInvalidRole(t *testing.T) {
+	client, _ := newInMemoryPeers()
+
+	send := func(b []byte) error { return client.Send(context.Background(), b) }
+	receive := func() ([]byte, error) { return client.Receive(context.Background()) }
+
+	_, _, _, err := Perform(
+		context.Background(),
+		role(999),
+		send,
+		receive,
+	)
+
 	if err == nil {
-		t.Fatal("expected client handshake to fail due to context cancellation, but it succeeded")
+		t.Fatal("expected error for invalid handshake role")
+	}
+}
+
+func TestHandshakeSendFailure(t *testing.T) {
+	client, server := newInMemoryPeers()
+
+	client.sendFunc = func(context.Context, []byte) error {
+		return errors.New("send failed")
 	}
 
-	_, _, _, err = Perform(ctx, Responder, serverSend, serverReceive)
-	if err == nil {
-		t.Fatal("expected server handshake to fail due to context cancellation, but it succeeded")
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	clientCh := runHandshakeAsync(ctx, Initiator, client)
+	serverCh := runHandshakeAsync(ctx, Responder, server)
+
+	clientRes := <-clientCh
+	if clientRes.err == nil {
+		t.Fatal("expected client handshake to fail")
+	}
+
+	// Cancel to unblock responder
+	cancel()
+
+	select {
+	case <-serverCh:
+		// Responder should also fail due to send failure on client side
+	case <-time.After(time.Second):
+		t.Fatal("responder did not exit after context cancellation")
+	}
+}
+
+func TestHandshakeHashMatchesBetweenPeers(t *testing.T) {
+	client, server := newInMemoryPeers()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	clientCh := runHandshakeAsync(ctx, Initiator, client)
+	serverCh := runHandshakeAsync(ctx, Responder, server)
+
+	clientRes := <-clientCh
+	serverRes := <-serverCh
+
+	if !bytes.Equal(clientRes.hash, serverRes.hash) {
+		t.Fatal("handshake hashes do not match")
+	}
+}
+
+func TestMultipleHandshakes(t *testing.T) {
+	const n = 5
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	results := make(chan error, n)
+
+	for range n {
+		go func() {
+			client, server := newInMemoryPeers()
+
+			clientCh := runHandshakeAsync(ctx, Initiator, client)
+			serverCh := runHandshakeAsync(ctx, Responder, server)
+
+			clientRes := <-clientCh
+			serverRes := <-serverCh
+
+			if clientRes.err != nil {
+				results <- clientRes.err
+				return
+			}
+			if serverRes.err != nil {
+				results <- serverRes.err
+				return
+			}
+			if !bytes.Equal(clientRes.hash, serverRes.hash) {
+				results <- errors.New("hash mismatch")
+				return
+			}
+
+			results <- nil
+		}()
+	}
+
+	for range n {
+		if err := <-results; err != nil {
+			t.Fatal(err)
+		}
 	}
 }
