@@ -39,12 +39,12 @@ func TestNoiseHandshakeVerificationWordsMatch(t *testing.T) {
 
 	// Run client and server concurrently
 	go func() {
-		_, _, hash, err := InitiatorHandshake(clientSend, clientReceive)
+		_, _, hash, err := Perform(Initiator, clientSend, clientReceive)
 		clientResultChannel <- result{hash: hash, err: err}
 	}()
 
 	go func() {
-		_, _, hash, err := ResponderHandshake(serverSend, serverReceive)
+		_, _, hash, err := Perform(Responder, serverSend, serverReceive)
 		serverResultChannel <- result{hash: hash, err: err}
 	}()
 
