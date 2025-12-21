@@ -2,31 +2,39 @@ package handshake
 
 import "github.com/flynn/noise"
 
-type stepFunction func(*noise.HandshakeState) (*noise.CipherState, *noise.CipherState, error)
-
-func stepSend(send func([]byte) error) stepFunction {
-	return func(handshakeState *noise.HandshakeState) (*noise.CipherState, *noise.CipherState, error) {
-		message, sendCipherState, receiveCipherState, err := handshakeState.WriteMessage(nil, nil)
-		if err != nil {
-			return nil, nil, err
-		}
-		if err := send(message); err != nil {
-			return nil, nil, err
-		}
-
-		return sendCipherState, receiveCipherState, nil
-	}
+type step interface {
+	apply(*noise.HandshakeState, peer) (*noise.CipherState, *noise.CipherState, error)
 }
 
-func stepReceive(receive func() ([]byte, error)) stepFunction {
-	return func(handshakeState *noise.HandshakeState) (*noise.CipherState, *noise.CipherState, error) {
-		message, err := receive()
-		if err != nil {
-			return nil, nil, err
-		}
+type stepSend struct{}
 
-		_, sendCipherState, receiveCipherState, err := handshakeState.ReadMessage(nil, message)
-
-		return sendCipherState, receiveCipherState, err
+func (stepSend) apply(
+	handshakeState *noise.HandshakeState,
+	peer peer,
+) (*noise.CipherState, *noise.CipherState, error) {
+	message, sendCipherState, receiveCipherState, err := handshakeState.WriteMessage(nil, nil)
+	if err != nil {
+		return nil, nil, err
 	}
+
+	if err := peer.Send(message); err != nil {
+		return nil, nil, err
+	}
+
+	return sendCipherState, receiveCipherState, nil
+}
+
+type stepReceive struct{}
+
+func (stepReceive) apply(
+	handshakeState *noise.HandshakeState,
+	peer peer,
+) (*noise.CipherState, *noise.CipherState, error) {
+	message, err := peer.Receive()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	_, sendCipherState, receiveCipherState, err := handshakeState.ReadMessage(nil, message)
+	return sendCipherState, receiveCipherState, err
 }

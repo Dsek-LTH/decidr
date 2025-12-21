@@ -5,15 +5,8 @@ import (
 	"github.com/flynn/noise"
 )
 
-type Roles int
-
-const (
-	Initiator Roles = iota
-	Responder
-)
-
 func Perform(
-	role Roles,
+	role role,
 	send func([]byte) error,
 	receive func() ([]byte, error),
 ) (
@@ -22,30 +15,21 @@ func Perform(
 	handshakeHash []byte,
 	err error,
 ) {
-	handshakeState, err := noise.NewHandshakeState(GetNoiseConfig(role))
+	peer := newFuncPeer(send, receive)
+
+	handshakeState, err := noise.NewHandshakeState(
+		getNoiseConfig(role),
+	)
 	if err != nil {
-		return
+		return nil, nil, nil, err
 	}
 
-	var steps []stepFunction
-	if role == Initiator {
-		steps = []stepFunction{
-			stepSend(send),
-			stepReceive(receive),
-		}
-	} else {
-		steps = []stepFunction{
-			stepReceive(receive),
-			stepSend(send),
-		}
-	}
-	for _, step := range steps {
-		sendCipherState, receiveCipherState, err = step(handshakeState)
+	for _, step := range stepsFor(role) {
+		sendCipherState, receiveCipherState, err = step.apply(handshakeState, peer)
 		if err != nil {
-			return
+			return nil, nil, nil, err
 		}
 	}
 
-	handshakeHash = handshakeState.ChannelBinding()
-	return
+	return sendCipherState, receiveCipherState, handshakeState.ChannelBinding(), nil
 }
