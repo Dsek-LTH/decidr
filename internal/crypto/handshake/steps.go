@@ -2,6 +2,7 @@ package handshake
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/flynn/noise"
 )
@@ -23,11 +24,11 @@ func (stepSend) apply(
 ) (*noise.CipherState, *noise.CipherState, error) {
 	message, sendCipherState, receiveCipherState, err := handshakeState.WriteMessage(nil, nil)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("handshake write: %w", err)
 	}
 
 	if err := peer.Send(ctx, message); err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("handshake send: %w", err)
 	}
 
 	return sendCipherState, receiveCipherState, nil
@@ -42,9 +43,12 @@ func (stepReceive) apply(
 ) (*noise.CipherState, *noise.CipherState, error) {
 	message, err := peer.Receive(ctx)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("handshake receive: %w", err)
 	}
 
 	_, sendCipherState, receiveCipherState, err := handshakeState.ReadMessage(nil, message)
+	if err != nil {
+		err = fmt.Errorf("handshake read: %w", err)
+	}
 	return sendCipherState, receiveCipherState, err
 }
