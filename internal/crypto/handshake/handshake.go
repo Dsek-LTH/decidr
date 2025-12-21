@@ -2,10 +2,13 @@
 package handshake
 
 import (
+	"context"
+
 	"github.com/flynn/noise"
 )
 
 func Perform(
+	ctx context.Context,
 	role role,
 	send func([]byte) error,
 	receive func() ([]byte, error),
@@ -25,7 +28,7 @@ func Perform(
 	}
 
 	for _, step := range stepsFor(role) {
-		sendCipherState, receiveCipherState, err = step.apply(handshakeState, peer)
+		sendCipherState, receiveCipherState, err = step.apply(ctx, handshakeState, peer)
 		if err != nil {
 			return nil, nil, nil, err
 		}

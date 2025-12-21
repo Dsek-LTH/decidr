@@ -1,11 +1,13 @@
 package handshake
 
+import "context"
+
 type sender interface {
-	Send([]byte) error
+	Send(context.Context, []byte) error
 }
 
 type receiver interface {
-	Receive() ([]byte, error)
+	Receive(context.Context) ([]byte, error)
 }
 
 type peer interface {
@@ -18,12 +20,22 @@ type funcPeer struct {
 	receive func() ([]byte, error)
 }
 
-func (p funcPeer) Send(b []byte) error {
-	return p.send(b)
+func (p funcPeer) Send(ctx context.Context, b []byte) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+		return p.send(b)
+	}
 }
 
-func (p funcPeer) Receive() ([]byte, error) {
-	return p.receive()
+func (p funcPeer) Receive(ctx context.Context) ([]byte, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+		return p.receive()
+	}
 }
 
 func newFuncPeer(

@@ -1,14 +1,23 @@
 package handshake
 
-import "github.com/flynn/noise"
+import (
+	"context"
+
+	"github.com/flynn/noise"
+)
 
 type step interface {
-	apply(*noise.HandshakeState, peer) (*noise.CipherState, *noise.CipherState, error)
+	apply(
+		context.Context,
+		*noise.HandshakeState,
+		peer,
+	) (*noise.CipherState, *noise.CipherState, error)
 }
 
 type stepSend struct{}
 
 func (stepSend) apply(
+	ctx context.Context,
 	handshakeState *noise.HandshakeState,
 	peer peer,
 ) (*noise.CipherState, *noise.CipherState, error) {
@@ -17,7 +26,7 @@ func (stepSend) apply(
 		return nil, nil, err
 	}
 
-	if err := peer.Send(message); err != nil {
+	if err := peer.Send(ctx, message); err != nil {
 		return nil, nil, err
 	}
 
@@ -27,10 +36,11 @@ func (stepSend) apply(
 type stepReceive struct{}
 
 func (stepReceive) apply(
+	ctx context.Context,
 	handshakeState *noise.HandshakeState,
 	peer peer,
 ) (*noise.CipherState, *noise.CipherState, error) {
-	message, err := peer.Receive()
+	message, err := peer.Receive(ctx)
 	if err != nil {
 		return nil, nil, err
 	}

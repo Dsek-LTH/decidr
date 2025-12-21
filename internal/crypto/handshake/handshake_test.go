@@ -1,13 +1,14 @@
 package handshake
 
 import (
+	"context"
 	"strings"
 	"testing"
 
 	"github.com/Dsek-LTH/decidr/internal/crypto"
 )
 
-func TestNoiseHandshakeVerificationWordsMatch(t *testing.T) {
+func TestHandshakeVerificationWordsMatch(t *testing.T) {
 	// In-memory "network"
 	clientToServerChannel := make(chan []byte, 1)
 	serverToClientChannel := make(chan []byte, 1)
@@ -39,12 +40,12 @@ func TestNoiseHandshakeVerificationWordsMatch(t *testing.T) {
 
 	// Run client and server concurrently
 	go func() {
-		_, _, hash, err := Perform(Initiator, clientSend, clientReceive)
+		_, _, hash, err := Perform(context.Background(), Initiator, clientSend, clientReceive)
 		clientResultChannel <- result{hash: hash, err: err}
 	}()
 
 	go func() {
-		_, _, hash, err := Perform(Responder, serverSend, serverReceive)
+		_, _, hash, err := Perform(context.Background(), Responder, serverSend, serverReceive)
 		serverResultChannel <- result{hash: hash, err: err}
 	}()
 
@@ -70,5 +71,42 @@ func TestNoiseHandshakeVerificationWordsMatch(t *testing.T) {
 			clientCode,
 			serverCode,
 		)
+	}
+}
+
+func TestHandshakeContextCancellation(t *testing.T) {
+	// In-memory "network"
+	clientToServerChannel := make(chan []byte, 1)
+	serverToClientChannel := make(chan []byte, 1)
+
+	// Mock send/receive
+	clientSend := func(b []byte) error {
+		clientToServerChannel <- b
+		return nil
+	}
+	clientReceive := func() ([]byte, error) {
+		return <-serverToClientChannel, nil
+	}
+
+	serverSend := func(b []byte) error {
+		serverToClientChannel <- b
+		return nil
+	}
+	serverReceive := func() ([]byte, error) {
+		return <-clientToServerChannel, nil
+	}
+
+	// Create a context that is already cancelled
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, _, _, err := Perform(ctx, Initiator, clientSend, clientReceive)
+	if err == nil {
+		t.Fatal("expected client handshake to fail due to context cancellation, but it succeeded")
+	}
+
+	_, _, _, err = Perform(ctx, Responder, serverSend, serverReceive)
+	if err == nil {
+		t.Fatal("expected server handshake to fail due to context cancellation, but it succeeded")
 	}
 }
