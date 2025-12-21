@@ -77,7 +77,10 @@ func (tr *TemplateRenderer) Render(w io.Writer, templateIdentifier string, data 
 		blockName = pageName
 	}
 	if blockName == "" {
-		return fmt.Errorf("error rendering template '%s': block templateIdentifier cannot be empty", templateIdentifier)
+		return fmt.Errorf(
+			"error rendering template '%s': block templateIdentifier cannot be empty",
+			templateIdentifier,
+		)
 	}
 
 	tmpl, ok := tr.templates[pageName]
