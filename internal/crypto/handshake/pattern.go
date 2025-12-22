@@ -18,9 +18,9 @@ var patternNK = pattern{
 
 func stepsFor(role role) []step {
 	switch role {
-	case Initiator:
+	case initiator:
 		return patternNK.initiator
-	case Responder:
+	case responder:
 		return patternNK.responder
 	default:
 		panic("unknown handshake role")

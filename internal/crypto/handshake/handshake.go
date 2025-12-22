@@ -3,7 +3,6 @@ package handshake
 
 import (
 	"context"
-	"errors"
 
 	"github.com/flynn/noise"
 )
@@ -18,31 +17,23 @@ import (
 // receiveCipherState is used for inbound traffic after the handshake.
 func Perform(
 	ctx context.Context,
-	role role,
 	send func([]byte) error,
 	receive func() ([]byte, error),
-	publicKey []byte,
-	privateKey []byte,
+	identity handshakeIdentity,
 ) (
 	sendCipherState *noise.CipherState,
 	receiveCipherState *noise.CipherState,
 	handshakeState *noise.HandshakeState,
 	err error,
 ) {
-	if !role.valid() {
-		return nil, nil, nil, errors.New("invalid handshake role")
-	}
-
 	peer := newFuncPeer(send, receive)
 
-	handshakeState, err = noise.NewHandshakeState(
-		getNoiseConfig(role, publicKey, privateKey),
-	)
+	handshakeState, err = noise.NewHandshakeState(identity.getNoiseConfig())
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	for _, step := range stepsFor(role) {
+	for _, step := range stepsFor(identity.getRole()) {
 		sendCipherState, receiveCipherState, err = step.apply(ctx, handshakeState, peer)
 		if err != nil {
 			return nil, nil, nil, err

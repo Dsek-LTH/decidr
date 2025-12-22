@@ -9,7 +9,10 @@ tool (
 	mvdan.cc/gofumpt
 )
 
-require github.com/flynn/noise v1.1.0
+require (
+	github.com/flynn/noise v1.1.0
+	golang.org/x/crypto v0.41.0
+)
 
 require (
 	dario.cat/mergo v1.0.2 // indirect
@@ -35,7 +38,6 @@ require (
 	github.com/spf13/cast v1.9.2 // indirect
 	github.com/tdewolff/parse/v2 v2.8.3 // indirect
 	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
-	golang.org/x/crypto v0.41.0 // indirect
 	golang.org/x/mod v0.31.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.39.0 // indirect

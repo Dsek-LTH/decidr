@@ -2,13 +2,9 @@ package handshake
 
 import (
 	"context"
-	"crypto/ed25519"
-	"crypto/rand"
 	"crypto/sha256"
 	"fmt"
 	"testing"
-
-	"golang.org/x/crypto/curve25519"
 )
 
 type inMemoryPeer struct {
@@ -60,21 +56,29 @@ type handshakeResult struct {
 	err  error
 }
 
-func runHandshakeAsync(ctx context.Context, role role, peer peer, publicKey []byte, privateKey []byte) <-chan handshakeResult {
+func runHandshakeAsync(
+	ctx context.Context,
+	peer peer,
+	identity handshakeIdentity,
+) <-chan handshakeResult {
 	ch := make(chan handshakeResult, 1)
 
 	go func() {
 		send := func(b []byte) error { return peer.Send(ctx, b) }
 		receive := func() ([]byte, error) { return peer.Receive(ctx) }
 
-		if _, _, handshakeState, err := Perform(ctx, role, send, receive, publicKey, privateKey); err != nil {
+		if _, _, handshakeState, err := Perform(ctx, send, receive, identity); err != nil {
 			ch <- handshakeResult{err: fmt.Errorf("handshake failed: %w", err)}
 		} else {
 			sum := func() [32]byte {
-				if role == Initiator {
+				switch id := identity.(type) {
+				case clientIdentity:
 					return sha256.Sum256(handshakeState.PeerStatic())
-				} else {
+				case adminIdentity:
+					publicKey := id.PublicKey
 					return sha256.Sum256(publicKey)
+				default:
+					return [32]byte{}
 				}
 			}()
 			ch <- handshakeResult{hash: sum[:], err: err}
@@ -84,18 +88,11 @@ func runHandshakeAsync(ctx context.Context, role role, peer peer, publicKey []by
 	return ch
 }
 
-func getKeypair(t *testing.T) (ed25519.PublicKey, ed25519.PrivateKey) {
-	t.Helper()
-
-	var privateKey [32]byte
-	_, err := rand.Read(privateKey[:])
+func getIdentityPair(t *testing.T) (handshakeIdentity, handshakeIdentity) {
+	clientEndpoint, adminEndpoint, err := NewAdminEndpoint()
 	if err != nil {
-		t.Fatalf("failed to read random bytes for X25519 private key: %v", err)
-	}
-	publicKey, err := curve25519.X25519(privateKey[:], curve25519.Basepoint)
-	if err != nil {
-		t.Fatalf("failed to derive X25519 public key: %v", err)
+		t.Fatalf("failed to create admin/client endpoints: %v", err)
 	}
 
-	return publicKey, privateKey[:]
+	return clientEndpoint.Identity, adminEndpoint.Identity
 }
