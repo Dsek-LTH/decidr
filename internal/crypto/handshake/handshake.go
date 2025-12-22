@@ -12,15 +12,21 @@ import (
 //
 // Returns the send and receive cipher states for encrypting/decrypting subsequent messages,
 // the handshake hash for verification, and/or any error encountered during the process.
+//
+// sendCipherState is used for outbound traffic after the handshake.
+//
+// receiveCipherState is used for inbound traffic after the handshake.
 func Perform(
 	ctx context.Context,
 	role role,
 	send func([]byte) error,
 	receive func() ([]byte, error),
+	publicKey []byte,
+	privateKey []byte,
 ) (
 	sendCipherState *noise.CipherState,
 	receiveCipherState *noise.CipherState,
-	handshakeHash []byte,
+	handshakeState *noise.HandshakeState,
 	err error,
 ) {
 	if !role.valid() {
@@ -29,8 +35,8 @@ func Perform(
 
 	peer := newFuncPeer(send, receive)
 
-	handshakeState, err := noise.NewHandshakeState(
-		getNoiseConfig(role),
+	handshakeState, err = noise.NewHandshakeState(
+		getNoiseConfig(role, publicKey, privateKey),
 	)
 	if err != nil {
 		return nil, nil, nil, err
@@ -45,5 +51,5 @@ func Perform(
 
 	// sendCipherState is used for outbound traffic after the handshake.
 	// receiveCipherState is used for inbound traffic after the handshake.
-	return sendCipherState, receiveCipherState, handshakeState.ChannelBinding(), nil
+	return sendCipherState, receiveCipherState, handshakeState, nil
 }

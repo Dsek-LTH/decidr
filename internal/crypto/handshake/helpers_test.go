@@ -2,7 +2,13 @@ package handshake
 
 import (
 	"context"
+	"crypto/ed25519"
+	"crypto/rand"
+	"crypto/sha256"
 	"fmt"
+	"testing"
+
+	"golang.org/x/crypto/curve25519"
 )
 
 type inMemoryPeer struct {
@@ -54,19 +60,42 @@ type handshakeResult struct {
 	err  error
 }
 
-func runHandshakeAsync(ctx context.Context, role role, peer peer) <-chan handshakeResult {
+func runHandshakeAsync(ctx context.Context, role role, peer peer, publicKey []byte, privateKey []byte) <-chan handshakeResult {
 	ch := make(chan handshakeResult, 1)
 
 	go func() {
 		send := func(b []byte) error { return peer.Send(ctx, b) }
 		receive := func() ([]byte, error) { return peer.Receive(ctx) }
 
-		if _, _, hash, err := Perform(ctx, role, send, receive); err != nil {
+		if _, _, handshakeState, err := Perform(ctx, role, send, receive, publicKey, privateKey); err != nil {
 			ch <- handshakeResult{err: fmt.Errorf("handshake failed: %w", err)}
 		} else {
-			ch <- handshakeResult{hash: hash, err: err}
+			sum := func() [32]byte {
+				if role == Initiator {
+					return sha256.Sum256(handshakeState.PeerStatic())
+				} else {
+					return sha256.Sum256(publicKey)
+				}
+			}()
+			ch <- handshakeResult{hash: sum[:], err: err}
 		}
 	}()
 
 	return ch
+}
+
+func getKeypair(t *testing.T) (ed25519.PublicKey, ed25519.PrivateKey) {
+	t.Helper()
+
+	var privateKey [32]byte
+	_, err := rand.Read(privateKey[:])
+	if err != nil {
+		t.Fatalf("failed to read random bytes for X25519 private key: %v", err)
+	}
+	publicKey, err := curve25519.X25519(privateKey[:], curve25519.Basepoint)
+	if err != nil {
+		t.Fatalf("failed to derive X25519 public key: %v", err)
+	}
+
+	return publicKey, privateKey[:]
 }

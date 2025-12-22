@@ -5,7 +5,7 @@ type pattern struct {
 	responder []step
 }
 
-var patternNN = pattern{
+var patternNK = pattern{
 	initiator: []step{
 		stepSend{},
 		stepReceive{},
@@ -19,9 +19,9 @@ var patternNN = pattern{
 func stepsFor(role role) []step {
 	switch role {
 	case Initiator:
-		return patternNN.initiator
+		return patternNK.initiator
 	case Responder:
-		return patternNN.responder
+		return patternNK.responder
 	default:
 		panic("unknown handshake role")
 	}

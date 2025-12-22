@@ -17,8 +17,9 @@ func TestHandshakeVerificationWordsMatch(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	clientCh := runHandshakeAsync(ctx, Initiator, client)
-	serverCh := runHandshakeAsync(ctx, Responder, server)
+	publicKey, privateKey := getKeypair(t)
+	clientCh := runHandshakeAsync(ctx, Initiator, client, publicKey, nil)
+	serverCh := runHandshakeAsync(ctx, Responder, server, publicKey, privateKey)
 
 	var clientRes, serverRes handshakeResult
 
@@ -65,8 +66,9 @@ func TestHandshakeContextCancellation(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	clientCh := runHandshakeAsync(ctx, Initiator, client)
-	serverCh := runHandshakeAsync(ctx, Responder, server)
+	publicKey, privateKey := getKeypair(t)
+	clientCh := runHandshakeAsync(ctx, Initiator, client, publicKey, nil)
+	serverCh := runHandshakeAsync(ctx, Responder, server, publicKey, privateKey)
 
 	// Cancel shortly after starting
 	cancel()
@@ -85,11 +87,14 @@ func TestHandshakeInvalidRole(t *testing.T) {
 	send := func(b []byte) error { return client.Send(context.Background(), b) }
 	receive := func() ([]byte, error) { return client.Receive(context.Background()) }
 
+	publicKey, _ := getKeypair(t)
 	_, _, _, err := Perform(
 		context.Background(),
 		role(999),
 		send,
 		receive,
+		publicKey,
+		nil,
 	)
 
 	if err == nil {
@@ -107,8 +112,9 @@ func TestHandshakeSendFailure(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	clientCh := runHandshakeAsync(ctx, Initiator, client)
-	serverCh := runHandshakeAsync(ctx, Responder, server)
+	publicKey, privateKey := getKeypair(t)
+	clientCh := runHandshakeAsync(ctx, Initiator, client, publicKey, nil)
+	serverCh := runHandshakeAsync(ctx, Responder, server, publicKey, privateKey)
 
 	clientRes := <-clientCh
 	if clientRes.err == nil {
@@ -132,8 +138,9 @@ func TestHandshakeHashMatchesBetweenPeers(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	clientCh := runHandshakeAsync(ctx, Initiator, client)
-	serverCh := runHandshakeAsync(ctx, Responder, server)
+	publicKey, privateKey := getKeypair(t)
+	clientCh := runHandshakeAsync(ctx, Initiator, client, publicKey, nil)
+	serverCh := runHandshakeAsync(ctx, Responder, server, publicKey, privateKey)
 
 	clientRes := <-clientCh
 	serverRes := <-serverCh
@@ -155,8 +162,9 @@ func TestMultipleHandshakes(t *testing.T) {
 		go func() {
 			client, server := newInMemoryPeers()
 
-			clientCh := runHandshakeAsync(ctx, Initiator, client)
-			serverCh := runHandshakeAsync(ctx, Responder, server)
+			publicKey, privateKey := getKeypair(t)
+			clientCh := runHandshakeAsync(ctx, Initiator, client, publicKey, nil)
+			serverCh := runHandshakeAsync(ctx, Responder, server, publicKey, privateKey)
 
 			clientRes := <-clientCh
 			serverRes := <-serverCh
