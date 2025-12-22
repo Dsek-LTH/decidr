@@ -150,7 +150,7 @@ func TestHandshakeHashMatchesBetweenPeers(t *testing.T) {
 	}
 }
 
-func TestMultipleHandshakes(t *testing.T) {
+func TestMultipleHandshakesVerificationWordsMatch(t *testing.T) {
 	const n = 5
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -158,11 +158,12 @@ func TestMultipleHandshakes(t *testing.T) {
 
 	results := make(chan error, n)
 
+	publicKey, privateKey := getKeypair(t)
+	var verificationWords []string
 	for range n {
 		go func() {
 			client, server := newInMemoryPeers()
 
-			publicKey, privateKey := getKeypair(t)
 			clientCh := runHandshakeAsync(ctx, Initiator, client, publicKey, nil)
 			serverCh := runHandshakeAsync(ctx, Responder, server, publicKey, privateKey)
 
@@ -181,6 +182,10 @@ func TestMultipleHandshakes(t *testing.T) {
 				results <- errors.New("hash mismatch")
 				return
 			}
+			verificationWords = append(verificationWords, strings.Join(
+				crypto.GetVerificationWords(clientRes.hash, 6),
+				"-",
+			))
 
 			results <- nil
 		}()
@@ -189,6 +194,13 @@ func TestMultipleHandshakes(t *testing.T) {
 	for range n {
 		if err := <-results; err != nil {
 			t.Fatal(err)
+		}
+	}
+
+	first := verificationWords[0]
+	for _, words := range verificationWords[1:] {
+		if words != first {
+			t.Fatal("verification words do not match across handshakes")
 		}
 	}
 }
