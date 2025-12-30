@@ -22,7 +22,7 @@ func (stepSend) apply(
 	handshakeState *noise.HandshakeState,
 	peer peer,
 ) (*noise.CipherState, *noise.CipherState, error) {
-	message, sendCipherState, receiveCipherState, err := handshakeState.WriteMessage(nil, nil)
+	message, cipherState1, cipherState2, err := handshakeState.WriteMessage(nil, nil)
 	if err != nil {
 		return nil, nil, fmt.Errorf("handshake write: %w", err)
 	}
@@ -31,7 +31,7 @@ func (stepSend) apply(
 		return nil, nil, fmt.Errorf("handshake send: %w", err)
 	}
 
-	return sendCipherState, receiveCipherState, nil
+	return cipherState1, cipherState2, nil
 }
 
 type stepReceive struct{}
@@ -46,9 +46,9 @@ func (stepReceive) apply(
 		return nil, nil, fmt.Errorf("handshake receive: %w", err)
 	}
 
-	_, sendCipherState, receiveCipherState, err := handshakeState.ReadMessage(nil, message)
+	_, cipherState1, cipherState2, err := handshakeState.ReadMessage(nil, message)
 	if err != nil {
 		err = fmt.Errorf("handshake read: %w", err)
 	}
-	return sendCipherState, receiveCipherState, err
+	return cipherState1, cipherState2, err
 }

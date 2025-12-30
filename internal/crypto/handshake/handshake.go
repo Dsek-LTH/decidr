@@ -27,18 +27,20 @@ func Perform(
 	err error,
 ) {
 	peer := newFuncPeer(send, receive)
-
 	handshakeState, err = noise.NewHandshakeState(identity.getNoiseConfig())
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
+	var cipherState1, cipherState2 *noise.CipherState
 	for _, step := range stepsFor(identity.getRole()) {
-		sendCipherState, receiveCipherState, err = step.apply(ctx, handshakeState, peer)
+		cipherState1, cipherState2, err = step.apply(ctx, handshakeState, peer)
 		if err != nil {
 			return nil, nil, nil, err
 		}
 	}
+
+	sendCipherState, receiveCipherState = cipherStatesFor(identity.getRole(), cipherState1, cipherState2)
 
 	// sendCipherState is used for outbound traffic after the handshake.
 	// receiveCipherState is used for inbound traffic after the handshake.

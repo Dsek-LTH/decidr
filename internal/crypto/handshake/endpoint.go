@@ -6,7 +6,7 @@ type endpoint struct {
 	Identity handshakeIdentity
 }
 
-func NewAdminEndpoint() (endpoint, endpoint, error) {
+func NewAdminEndpoint() (clientEndpoint endpoint, adminEndpoint endpoint, err error) {
 	clientID, adminID, err := newAdminClientPair()
 	if err != nil {
 		return endpoint{}, endpoint{}, err
