@@ -9,7 +9,10 @@ const (
 	responder
 )
 
-func cipherStatesFor(role role, cipherState1, cipherState2 *noise.CipherState) (sendCipherState, receiveCipherState *noise.CipherState) {
+func cipherStatesFor(
+	role role,
+	cipherState1, cipherState2 *noise.CipherState,
+) (sendCipherState, receiveCipherState *noise.CipherState) {
 	if role == initiator {
 		// For Initiator, cipherState1 is Send, cipherState2 is Receive
 		return cipherState1, cipherState2

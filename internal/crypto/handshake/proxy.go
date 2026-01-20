@@ -7,22 +7,22 @@ import (
 )
 
 type Router struct {
-	admins      map[string]peer
+	admins      map[string]Peer
 	adminsMutex sync.RWMutex
 
-	clients      map[string]peer
+	clients      map[string]Peer
 	clientsMutex sync.RWMutex
 }
 
 func NewRouter() *Router {
 	return &Router{
-		admins:  make(map[string]peer),
-		clients: make(map[string]peer),
+		admins:  make(map[string]Peer),
+		clients: make(map[string]Peer),
 	}
 }
 
 // RegisterAdmin sets the peer representing the admin connection.
-func (router *Router) RegisterAdmin(id string, peer peer) {
+func (router *Router) RegisterAdmin(id string, peer Peer) {
 	router.adminsMutex.Lock()
 	defer router.adminsMutex.Unlock()
 	router.admins[id] = peer
@@ -36,7 +36,7 @@ func (router *Router) RemoveAdmin(id string) {
 }
 
 // RegisterClient adds a client peer to the routing table.
-func (router *Router) RegisterClient(id string, peer peer) {
+func (router *Router) RegisterClient(id string, peer Peer) {
 	router.clientsMutex.Lock()
 	defer router.clientsMutex.Unlock()
 	router.clients[id] = peer

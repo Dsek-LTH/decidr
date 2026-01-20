@@ -15,6 +15,14 @@ func NewAdminEndpoint() (clientEndpoint endpoint, adminEndpoint endpoint, err er
 	return endpoint{Identity: clientID}, endpoint{Identity: adminID}, nil
 }
 
+func GetClientEndpoint(adminPublicKey []byte) endpoint {
+	return endpoint{
+		Identity: clientIdentity{
+			AdminPublicKey: adminPublicKey,
+		},
+	}
+}
+
 func newAdminClientPair() (clientIdentity, adminIdentity, error) {
 	pub, priv, err := crypto.GenerateStaticKeypair()
 	if err != nil {

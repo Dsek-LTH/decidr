@@ -4,34 +4,19 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/Dsek-LTH/decidr/internal/routes"
-	"github.com/Dsek-LTH/decidr/internal/templates"
+	"github.com/Dsek-LTH/decidr/internal/crypto/handshake"
+	"github.com/gorilla/websocket"
 )
 
-func loggingMiddleWare(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf(
-			"%s -> %s",
-			r.RemoteAddr,
-			r.URL.String(),
-		)
-
-		next.ServeHTTP(w, r)
-	})
-}
+var (
+	router   = handshake.NewRouter()
+	upgrader = websocket.Upgrader{}
+)
 
 func main() {
-	templateRenderer := templates.NewTemplateRenderer()
+	http.HandleFunc("/ws/client", clientHandler)
+	http.HandleFunc("/ws/admin", adminHandler)
 
-	mux := http.NewServeMux()
-
-	routes.RegisterRoutes(mux, templateRenderer)
-
-	fs := http.FileServer(http.Dir("./web/static"))
-	mux.Handle("/static/", http.StripPrefix("/static/", fs))
-
-	logged := loggingMiddleWare(mux)
-
-	log.Println("Server listening on :11337")
-	log.Fatal(http.ListenAndServe(":11337", logged))
+	log.Println("Proxy server listening on :8080")
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }

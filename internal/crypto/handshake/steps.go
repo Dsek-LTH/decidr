@@ -11,7 +11,7 @@ type step interface {
 	apply(
 		context.Context,
 		*noise.HandshakeState,
-		peer,
+		Peer,
 	) (*noise.CipherState, *noise.CipherState, error)
 }
 
@@ -20,7 +20,7 @@ type stepSend struct{}
 func (stepSend) apply(
 	ctx context.Context,
 	handshakeState *noise.HandshakeState,
-	peer peer,
+	peer Peer,
 ) (*noise.CipherState, *noise.CipherState, error) {
 	message, cipherState1, cipherState2, err := handshakeState.WriteMessage(nil, nil)
 	if err != nil {
@@ -39,7 +39,7 @@ type stepReceive struct{}
 func (stepReceive) apply(
 	ctx context.Context,
 	handshakeState *noise.HandshakeState,
-	peer peer,
+	peer Peer,
 ) (*noise.CipherState, *noise.CipherState, error) {
 	message, err := peer.Receive(ctx)
 	if err != nil {

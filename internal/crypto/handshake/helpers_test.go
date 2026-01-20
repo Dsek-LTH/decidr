@@ -58,7 +58,7 @@ type handshakeResult struct {
 
 func runHandshakeAsync(
 	ctx context.Context,
-	peer peer,
+	peer Peer,
 	identity handshakeIdentity,
 ) <-chan handshakeResult {
 	ch := make(chan handshakeResult, 1)

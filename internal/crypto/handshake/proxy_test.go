@@ -77,7 +77,7 @@ func TestMultipleAdminsHandshake(t *testing.T) {
 	router := NewRouter()
 
 	// Helper to setup a routed pair
-	setupPair := func(adminID, clientID string) (peer, peer) {
+	setupPair := func(adminID, clientID string) (Peer, Peer) {
 		clientSide, proxySideClient := newInMemoryPeers()
 		adminSide, proxySideAdmin := newInMemoryPeers()
 

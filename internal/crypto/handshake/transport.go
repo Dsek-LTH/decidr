@@ -10,7 +10,7 @@ type receiver interface {
 	Receive(context.Context) ([]byte, error)
 }
 
-type peer interface {
+type Peer interface {
 	sender
 	receiver
 }
@@ -38,10 +38,10 @@ func (p funcPeer) Receive(ctx context.Context) ([]byte, error) {
 	}
 }
 
-func newFuncPeer(
+func NewFuncPeer(
 	send func([]byte) error,
 	receive func() ([]byte, error),
-) peer {
+) Peer {
 	return funcPeer{
 		send:    send,
 		receive: receive,
